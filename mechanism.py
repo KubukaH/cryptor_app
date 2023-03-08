@@ -1,6 +1,14 @@
 import sys
 from datetime import datetime
 from models import check_key
+from models import generate_keys
+from cryptography.hazmat.primitives import padding
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives import serialization
+
+from Crypto.PublicKey import RSA
+from Crypto.Random import get_random_bytes
+from Crypto.Cipher import AES, PKCS1_OAEP
 
 # IMPORTANT: The block size MUST be less than or equal to the key size!
 # (Note: The block size is in bytes, the key size is in bits. There
@@ -71,48 +79,42 @@ def readKeyFile(key):
   return (int(keySize), int(n), int(EorD))
 
 def decrypt_message(message):
-  r_msg = ''
-  checked_id = check_key("private_key")
+  pk = b'private_key'
+  checked_id = check_key(pk)
 
-  keySize = int(checked_id[1])
-  n = int(checked_id[2])
-  d = int(checked_id[3])
+  if checked_id == None:
+    generate_keys()
+    checked_id = check_key(pk)
+  
+  ciphertext = checked_id.encrypt(
+    message,
+    padding.OAEP(
+        mgf=padding.MGF1(algorithm=hashes.SHA256()),
+        algorithm=hashes.SHA256(),
+        label=None
+    )
+  )
 
-  # Read in the message length and the encrypted message from the file.
-  messageLength, blockSize, encryptedMessage = message[2].split('_')
-  messageLength = int(messageLength)
-  blockSize = int(blockSize)
-  # Check that key size is greater than block size.
-  if keySize < blockSize * 8:
-    sys.exit('ERROR: Block size is %s bits and key size is %s bits. The RSA cipher requires the block size to be equal to or greater than the key size. Either decrease the block size or use different keys.' % (blockSize * 8, keySize))
-
-  # Convert the encrypted message into large int values.
-  encryptedBlocks = []
-  for block in encryptedMessage.split(','):
-    encryptedBlocks.append(int(block))
-      
-  r_msg = decryptMessage(encryptedBlocks, messageLength, (n, d), blockSize)
-
-  return r_msg
+  return ciphertext
 
 def encrypt_message(message):
-  r_msg = ''
-  checked_id = check_key("public_key")
 
-  blockSize=DEFAULT_BLOCK_SIZE
-  keySize = int(checked_id[1])
-  n = int(checked_id[2])
-  e = int(checked_id[3])
+  data_file = ""
 
-  if keySize < blockSize * 8: # * 8 to convert bytes to bits
-    sys.exit('ERROR: Block size is {0} bits and key size is {1} bits. The RSA cipher requires the block size to be equal to or greater than the key size. Did you specify the correct key file and encrypted file?'.format(blockSize * 8, keySize))
+  def key_pair():
+    pk = b'public_key'
+    public_bytes = check_key(pk)
 
-  encryptedBlocks = encryptMessage(message, (n, e), blockSize)
-
-  for i in range(len(encryptedBlocks)):
-    encryptedBlocks[i] = str(encryptedBlocks[i])
-  encryptedContent = ','.join(encryptedBlocks)
-
-  r_msg = '{0}_{1}_{2}'.format(len(message), blockSize, encryptedContent)
-
-  return r_msg
+    if public_bytes is None:
+      generate_keys()
+    
+    return public_bytes
+  
+  new_key_pair = key_pair()
+  
+  # Encrypt the data with the AES session key
+  cipher_aes = AES.new(new_key_pair.session_key, AES.MODE_EAX)
+  ciphertext, tag = cipher_aes.encrypt_and_digest(message)
+  [ data_file(x) for x in (new_key_pair.session_key, cipher_aes.nonce, tag, ciphertext) ]
+  
+  return

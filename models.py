@@ -1,6 +1,19 @@
 import sqlite3 as sql
 from collections import namedtuple
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives import serialization
+from hashlib import blake2b
+import secrets
+from Crypto.PublicKey import RSA
+from Crypto.Random import get_random_bytes
+from Crypto.Cipher import AES, PKCS1_OAEP
+from tkinter.messagebox import showinfo, showerror
 	
+def hashed_id(pid):
+  h = blake2b(digest_size=24)
+  h.update(pid)
+  return h.hexdigest().encode('utf-8')
+
 def namedtuple_factory(cursor, row):
   fields = [column[0] for column in cursor.description]
   cls = namedtuple("Row", fields)
@@ -83,7 +96,7 @@ def retrieveUsers():
 	con.close()
 	return users
 
-def insertFile(file_id, owner_name, data_file, ts):
+def insertFile(file_id, owner_name, data_file, cipher_aes, tag, session_key, ts):
 	res = ''
 	try:
 		con = sql.connect("notebookserver.db")
@@ -93,10 +106,13 @@ def insertFile(file_id, owner_name, data_file, ts):
         :file_id,
         :owner_name,
         :data_file,
+				:cipher_aes,
+				:tag,
+				:session_key,
         :ts,
 				:last_updated
       )
-      ''',{'file_id': file_id, 'owner_name': owner_name, 'data_file': data_file, 'ts': ts, 'last_updated': ts})
+      ''',{'file_id': file_id, 'owner_name': owner_name, 'data_file': data_file, 'cipher_aes':cipher_aes, 'tag': tag, 'session_key': session_key, 'ts': ts, 'last_updated': ts})
 			res = 'okay'
 	except Exception as ep:
 		res = ep
@@ -150,6 +166,36 @@ def deleteFile(file_id):
 	except Exception as ep:
 		res = ep
 	return res
+
+def generate_keys():
+	con = sql.connect('notebookserver.db')
+	try:
+		item = ''
+		pvt = b'private_key'
+		pbl = b'public_key'
+
+		key = RSA.generate(2048)
+
+		public_bytes = key.publickey().export_key()
+
+		private_bytes = key.export_key()
+		
+		recipient_key = RSA.import_key(public_bytes)
+		session_key = get_random_bytes(16)
+
+		# Encrypt the session key with the public RSA key
+		cipher_rsa = PKCS1_OAEP.new(recipient_key)
+		enc_session_key = cipher_rsa.encrypt(session_key)
+
+		con.row_factory = namedtuple_factory
+		cur = con.cursor()
+		cur.execute('''INSERT INTO keys VALUES(:key_id, :key_data, :session_key)''', {"key_data": public_bytes, "key_id": pbl, "session_key":session_key})
+		cur.execute('''INSERT INTO keys VALUES(:key_id, :key_data, :session_key)''', {"key_data": private_bytes, "key_id": pvt, "session_key":enc_session_key})
+		con.commit()
+		con.close()
+	except Exception as ex:
+		item = ex
+	return item
 
 def check_key(key_id):
 	item = ''

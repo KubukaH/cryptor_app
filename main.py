@@ -1,5 +1,4 @@
 #! /usr/bin/python3.11
-import sys
 import tkinter as tk
 from tkinter.ttk import Frame, Button, Label, Notebook, Entry, Style, Checkbutton
 from datetime import timedelta, datetime
@@ -15,19 +14,25 @@ from mechanism import encrypt_message, decrypt_message
 from files_list import file_list
 import sqlite3
 from label_frame import LicencesFrame, Copyright
-import sys
 from subprocess import run, PIPE, STDOUT
 import pkg_resources
+from Crypto.PublicKey import RSA
+from Crypto.Cipher import AES, PKCS1_OAEP
+from models import generate_keys, check_key
 
 con = sqlite3.connect('notebookserver.db', detect_types=sqlite3.PARSE_DECLTYPES|sqlite3.PARSE_COLNAMES)
 cur = con.cursor()
-cur.executescript("""
+cur.executescript('''
   BEGIN;
   CREATE TABLE IF NOT EXISTS lockedfiles(
     file_id PRIMARY KEY UNIQUE,
     owner_name TEXT,
     data_file TEXT,
-    ts TIMESTAMP
+    cipher_aes TEXT,
+    tag TEXT,
+    session_key TEXT,
+    ts TIMESTAMP,
+    last_updated TIMESTAMP
   );
   CREATE TABLE IF NOT EXISTS users(
     user_id PRIMARY KEY UNIQUE,
@@ -47,8 +52,13 @@ cur.executescript("""
     cookie_owner_last_updated DATE,
     cookie_expired BOOLEAN
   );
+  CREATE TABLE IF NOT EXISTS keys(
+		key_id PRIMARY KEY UNIQUE,
+		key_data TEXT,
+    session_key TEXT
+	);
   COMMIT;
-""")
+''')
 
 AUTH_SIZE = 32
 ERROR = 'Error.TLabel'
@@ -252,14 +262,31 @@ def lock_file(session_cookie, upd_id, text_message, mode):
   res = None
 
   if len(text_message) > 5:
-    encrypted_content = encrypt_message(text_message)
+    pk = b'public_key'
+
+    new_key_pair = check_key(pk)
+
+    if new_key_pair is None:
+      item = generate_keys()
+      showerror(item)
+      new_key_pair = check_key(pk)
+    else:
+      new_key_pair = check_key(pk)
+
+    file_out = open("encrypted_data.bin", "wb")
+    
+    # Encrypt the data with the AES session key
+    cipher_aes = AES.new(new_key_pair.session_key, AES.MODE_EAX)
+    ciphertext, tag = cipher_aes.encrypt_and_digest(text_message.encode("utf-8"))
+    [ file_out.write(x) for x in (cipher_aes.nonce, tag, ciphertext) ]
+    file_out.close()
 
     if mode == 'create':
-      response = insertFile(file_id=hashed_id(secrets.token_bytes(24)), owner_name=session_cookie[2], data_file=encrypted_content, ts=datetime.now())
+      response = insertFile(file_id=hashed_id(secrets.token_bytes(24)), owner_name=session_cookie[2], data_file=ciphertext, cipher_aes=cipher_aes.nonce, tag=tag, session_key=new_key_pair.session_key, ts=datetime.now())
       res = response
 
     if mode == 'update':
-      response = updateFile(file_id=upd_id.get(), data_file=encrypted_content, last_updated=datetime.now())
+      response = updateFile(file_id=upd_id.get(), data_file=ciphertext, last_updated=datetime.now())
       res = response
 
   else:
@@ -274,11 +301,21 @@ def decrypt(doc_id):
     docfile = retrieveSingleFile(doc_id.get().encode('utf-8'))
 
     if docfile != None:
-      msg = decrypt_message(docfile)
+      bytes_k = check_key('private_key'.encode("utf-8"))
+      private_key = RSA.import_key(bytes_k[1])
+
+      # Decrypt Session Key
+      cipher_rsa = PKCS1_OAEP.new(private_key)
+      session_key = cipher_rsa.decrypt(bytes_k[2])
+
+      # Decrypt the data with the AES session key
+      cipher_aes = AES.new(session_key, AES.MODE_EAX, docfile[3])
+      msg = cipher_aes.decrypt_and_verify(docfile[2], docfile[4])
+
     else:
-      res = docfile
+      showerror("Empty Document")
   else:
-    res = "Can't perform search."
+    showerror("Can't perform search.")
 
   return msg
 
@@ -322,7 +359,7 @@ def base_frame_tab(root, session_cookie):
       showinfo('', 'New document was stored!')
 
   def file_update():
-    lockm = lock_file(session_cookie, upd_id, text_scroll.get(1.0, 'end'), mode='update')
+    lockm = lock_file(session_cookie, upd_id, text_message=text_scroll.get(1.0, 'end'), mode='update')
     if lockm != 'okay':
       showerror('', lockm)
       text_scroll.focus()

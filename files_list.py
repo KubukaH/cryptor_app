@@ -41,7 +41,7 @@ class file_list(Frame):
       Label(self.txtframe, text='No Files').grid(row=0, column=0)
     else:
       for i, doc in enumerate(self.all_files):
-        date = datetime.fromisoformat(doc[3])
+        date = datetime.fromisoformat(doc[6])
         Label(self.txtframe, text=doc[1].decode('utf-8'), background='white').grid(row=i, column=0, padx=2, pady=2)
         Label(self.txtframe, text=f"Last Saved: {date.strftime('%d-%m-%Y : %X')}", background='white').grid(row=i, column=1, pady=2, padx=2)
         Button(self.txtframe, cursor='hand2', text="Read", command=lambda docid=doc[0] : self.get_doc_id(docid), style="Decrypt.TButton").grid(row=i, column=2, pady=2, padx=2)
