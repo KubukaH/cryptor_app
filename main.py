@@ -104,7 +104,7 @@ def sign_in_tab(notebook, root):
     uname = email_tf.get().encode('utf-8')
     pwd = pwd_tf.get().encode('utf-8')
 
-    expire_d = timedelta(hours = 2)
+    expire_d = timedelta(minutes= 10)
     expt = datetime.now() + expire_d
 
     if uname != ''.encode('utf-8') and pwd != ''.encode('utf-8'):
@@ -273,20 +273,26 @@ def lock_file(session_cookie, upd_id, text_message, mode):
     else:
       new_key_pair = check_key(pk)
 
-    file_out = open("encrypted_data.bin", "wb")
+    # file_out = open("encrypted_data.bin", "wb")
     
     # Encrypt the data with the AES session key
     cipher_aes = AES.new(new_key_pair.session_key, AES.MODE_EAX)
     ciphertext, tag = cipher_aes.encrypt_and_digest(text_message.encode("utf-8"))
-    [ file_out.write(x) for x in (cipher_aes.nonce, tag, ciphertext) ]
-    file_out.close()
+    # [ file_out.write(x) for x in (cipher_aes.nonce, tag, ciphertext) ]
+    # file_out.close()
 
     if mode == 'create':
       response = insertFile(file_id=hashed_id(secrets.token_bytes(24)), owner_name=session_cookie[2], data_file=ciphertext, cipher_aes=cipher_aes.nonce, tag=tag, session_key=new_key_pair.session_key, ts=datetime.now())
       res = response
 
     if mode == 'update':
-      response = updateFile(file_id=upd_id.get(), data_file=ciphertext, last_updated=datetime.now())
+      response = updateFile(
+        file_id=upd_id.get().encode('utf-8'), 
+        data_file=ciphertext,
+        tag=tag,
+        cipher_aes=cipher_aes.nonce,
+        last_updated=datetime.now()
+      )
       res = response
 
   else:
@@ -322,7 +328,6 @@ def decrypt(doc_id):
 ### Opening Frame
 def base_frame_tab(root, session_cookie):
   root.geometry('976x512')
-
   upd_id = tk.StringVar()
 
   base_frame = Frame(root, width=976, height=512)
@@ -350,7 +355,7 @@ def base_frame_tab(root, session_cookie):
   side_pane.pack(side='right', fill='y')
   
   def file_locker():
-    lockm = lock_file(session_cookie, upd_id, text_scroll.get(1.0, 'end'), mode='create')
+    lockm = lock_file(session_cookie, upd_id=None, text_message=text_scroll.get(1.0, 'end'), mode='create')
     if lockm != 'okay':
       showerror('', lockm)
       text_scroll.focus()
@@ -358,26 +363,17 @@ def base_frame_tab(root, session_cookie):
       new_doc()
       showinfo('', 'New document was stored!')
 
-  def file_update():
-    lockm = lock_file(session_cookie, upd_id, text_message=text_scroll.get(1.0, 'end'), mode='update')
-    if lockm != 'okay':
-      showerror('', lockm)
-      text_scroll.focus()
-    else:
-      showinfo('', 'Updated document successfully!')
-      new_doc()
-
   def open_file_selector():
     pop_up = file_list(base_frame)
     base_frame.wait_window(pop_up.note)
-    upd_id.set(pop_up.doc_id)
     docid = pop_up.doc_id
     delid = pop_up.deleted_id
+    upd_id.set(docid.get())
 
     if len(delid.get()) > 1:
       my_del = askokcancel('Delete file', f'Deleting : {delid.get()}.\nIrreversible action.\n\n\t\tDo you want to continue?')
       if my_del:
-        deleted = deleteFile(delid.get())
+        deleted = deleteFile(delid.get().encode('utf-8'))
         print('Action: ', deleted)
         delid.set('')
       my_delete()
@@ -397,6 +393,16 @@ def base_frame_tab(root, session_cookie):
 
   def my_delete():
     open_file_selector()
+
+  def file_update():
+    lockm = lock_file(session_cookie, upd_id, text_message=text_scroll.get(1.0, 'end'), mode='update')
+    print(upd_id.get())
+    if lockm != 'okay':
+      showerror('', lockm)
+      text_scroll.focus()
+    else:
+      showinfo('', 'Updated document successfully!')
+      new_doc()
 
   lock_btn = Button(side_pane, text="Lock file", command=file_locker)
   savebtn = Button(side_pane, text="Save file", command=file_update)
@@ -422,13 +428,10 @@ def base_frame_tab(root, session_cookie):
 def Run_Cookie(root):
   cookie = verifyCookie()
   if cookie is not None:
-    if datetime.fromisoformat(cookie.cookie_expire_time) <= datetime.now():
+    if datetime.fromisoformat(cookie.cookie_expire_time) < datetime.now():
       logout_func(cookie[0])
       root.destroy()
       create_main_app()
-      return
-    else:
-      print('Cookie Expires at: ',datetime.fromisoformat(cookie.cookie_expire_time))
       return
   else:
     print('Session is logged out.')
@@ -440,7 +443,7 @@ def create_main_app():
     print(ps.stdout)
 
   # packages to be conditionally installed with exact version
-  required = {'tkinter', 'datetime', 'collections', 'sqlite3', 'hashlib', 'hmac', 'secrets', 'sys', 'subprocess', 'pkg_resources'}
+  required = {'tkinter', 'datetime', 'sqlite3', 'hashlib', 'hmac', 'secrets', 'sys', 'subprocess', 'pkg_resources'}
   installed = {f"{pkg.key}=={pkg.version}" for pkg in pkg_resources.working_set}
   missing = required - installed
 
@@ -498,12 +501,12 @@ def create_main_app():
     base.after(10000, check_run)
 
   root.columnconfigure(0, weight=1)
-  #root.protocol("WM_DELETE_WINDOW", lgt)
+  root.protocol("WM_DELETE_WINDOW", lgt)
 
   if session_cookie is not None:
     base = base_frame_tab(root, session_cookie)
+    base.after(300, check_run)
     base.pack(fill='both', expand=1)
-    base.after(10000, check_run)
   else:
     welcome = welcome_frame(root)
     welcome.pack(fill='both', expand=1)

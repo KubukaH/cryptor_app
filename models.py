@@ -118,15 +118,22 @@ def insertFile(file_id, owner_name, data_file, cipher_aes, tag, session_key, ts)
 		res = ep
 	return res
 
-def updateFile(file_id, data_file, last_updated):
+def updateFile(file_id, data_file, tag, cipher_aes, last_updated):
 	res = ''
 	try:
 		con = sql.connect("notebookserver.db")
 		with con:
 			cur = con.cursor()
 			cur.execute("SELECT * FROM lockedfiles WHERE file_id = :file_id", {"file_id": file_id})
-			cur.execute('''UPDATE lockedfiles SET data_file = :data_file, last_updated = :last_updated WHERE file_id = :file_id''', {'data_file': data_file, 'last_updated': last_updated, 'file_id': file_id})
-			con.commit()
+			cur.execute('''
+				UPDATE lockedfiles SET 
+					data_file = :data_file, 
+					tag = :tag,
+					cipher_aes = :cipher_aes,
+					last_updated = :last_updated
+				WHERE file_id = :file_id
+			''', 
+			{'data_file': data_file, 'tag': tag, 'cipher_aes': cipher_aes, 'last_updated': last_updated, 'file_id': file_id})
 			res = 'okay'
 	except Exception as ep:
 		res = ep
@@ -155,13 +162,12 @@ def retrieveSingleFile(file_id):
 
 def deleteFile(file_id):
 	res = ''
+	con = sql.connect("notebookserver.db")
 	try:
-		con = sql.connect("notebookserver.db")
 		with con:
 			cur = con.cursor()
 			cur.execute('''SELECT * FROM lockedfiles''')
 			cur.execute('''DELETE FROM lockedfiles WHERE file_id = :file_id''', {'file_id': file_id})
-			con.commit()
 			res = 'okay'
 	except Exception as ep:
 		res = ep
