@@ -493,7 +493,6 @@ def create_main_app():
 
   def check_run():
     Run_Cookie(root)
-    base.after(10000, check_run)
 
   root.columnconfigure(0, weight=1)
   # root.protocol("WM_DELETE_WINDOW", lgt)
