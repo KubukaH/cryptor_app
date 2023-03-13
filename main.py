@@ -104,7 +104,7 @@ def sign_in_tab(notebook, root):
     uname = email_tf.get().encode('utf-8')
     pwd = pwd_tf.get().encode('utf-8')
 
-    expire_d = timedelta(minutes= 10)
+    expire_d = timedelta(minutes= 50)
     expt = datetime.now() + expire_d
 
     if uname != ''.encode('utf-8') and pwd != ''.encode('utf-8'):
@@ -272,14 +272,10 @@ def lock_file(session_cookie, upd_id, text_message, mode):
       new_key_pair = check_key(pk)
     else:
       new_key_pair = check_key(pk)
-
-    # file_out = open("encrypted_data.bin", "wb")
     
     # Encrypt the data with the AES session key
     cipher_aes = AES.new(new_key_pair.session_key, AES.MODE_EAX)
     ciphertext, tag = cipher_aes.encrypt_and_digest(text_message.encode("utf-8"))
-    # [ file_out.write(x) for x in (cipher_aes.nonce, tag, ciphertext) ]
-    # file_out.close()
 
     if mode == 'create':
       response = insertFile(file_id=hashed_id(secrets.token_bytes(24)), owner_name=session_cookie[2], data_file=ciphertext, cipher_aes=cipher_aes.nonce, tag=tag, session_key=new_key_pair.session_key, ts=datetime.now())
@@ -396,18 +392,17 @@ def base_frame_tab(root, session_cookie):
 
   def file_update():
     lockm = lock_file(session_cookie, upd_id, text_message=text_scroll.get(1.0, 'end'), mode='update')
-    print(upd_id.get())
     if lockm != 'okay':
       showerror('', lockm)
       text_scroll.focus()
     else:
-      showinfo('', 'Updated document successfully!')
-      new_doc()
+      showinfo('', 'Document updated successfully!')
 
   lock_btn = Button(side_pane, text="Lock file", command=file_locker)
   savebtn = Button(side_pane, text="Save file", command=file_update)
 
   def new_doc():
+    upd_id.set('')
     text_scroll.delete(1.0, 'end')
     savebtn['state'] = 'disabled'
     lock_btn['state'] = 'normal'
@@ -501,7 +496,7 @@ def create_main_app():
     base.after(10000, check_run)
 
   root.columnconfigure(0, weight=1)
-  root.protocol("WM_DELETE_WINDOW", lgt)
+  # root.protocol("WM_DELETE_WINDOW", lgt)
 
   if session_cookie is not None:
     base = base_frame_tab(root, session_cookie)
