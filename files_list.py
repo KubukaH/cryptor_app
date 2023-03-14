@@ -70,17 +70,17 @@ class file_list(Frame):
         self.get_doc_id(get_id=value[0])
         self.delete_doc(delete_id=value[0])
 
-    self.list_box.bind('<<ListboxSelect>>', selected_items)
-
     # BUTTON FRAME
     self.btns_frame = Frame(self.note)
-    self.read_btn = Button(self.btns_frame, cursor='hand2', text="Read", style='Decrypt.TButton')
+    self.read_btn = Button(self.btns_frame, cursor='hand2', text="Read", style='Decrypt.TButton', command=selected_items)
     self.read_btn['state'] = 'disabled'
     self.read_btn.grid(row=0, column=0, pady=2, padx=2)
     self.del_btn = Button(self.btns_frame, cursor='hand2', text="Delete", style='Delete.TButton')
     self.del_btn['state'] = 'disabled'
     self.del_btn.grid(row=0, column=1, pady=2, padx=2)
     self.btns_frame.pack(side=tk.BOTTOM, fill=tk.X)
+
+    self.list_box.bind('<<ListboxSelect>>', selected_items)
 
   def get_doc_id(self, get_id):
     self.doc_id.set(get_id)
