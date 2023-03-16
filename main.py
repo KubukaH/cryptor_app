@@ -10,7 +10,6 @@ import secrets
 from tkinter.scrolledtext import ScrolledText
 from line_numbers import TextLineNumbers
 from side_panel import SidePanel
-from mechanism import encrypt_message, decrypt_message
 from files_list import file_list
 import sqlite3
 from label_frame import LicencesFrame, Copyright

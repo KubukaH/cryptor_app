@@ -18,7 +18,6 @@ class file_list(Frame):
     self.note.resizable(0, 0)
     self.note.maxsize(height=600, width=640)
     self.note.attributes('-toolwindow', True)
-    self.docs = []
 
     try:
       self.note.wm_iconbitmap("cryp.ico") 
