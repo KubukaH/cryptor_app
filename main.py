@@ -448,7 +448,7 @@ def create_main_app():
   root = tk.Tk()
   root.title('Cryptor App')
   root.resizable(0, 0)
-
+  
   # Styles
   style = Style(root)
   style.map("Signup.TButton",
