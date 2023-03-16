@@ -50,7 +50,7 @@ class file_list(Frame):
       self.list_frame,
       listvariable=self.list_var,
       height=8,
-      selectmode=tk.EXTENDED
+      selectmode=tk.BROWSE
     )
 
     self.vbar = tk.Scrollbar(self.list_frame, orient='vertical', command=self.list_box.yview)
@@ -67,16 +67,17 @@ class file_list(Frame):
       if (value) is not None:
         self.del_btn['state'] = 'normal'
         self.read_btn['state'] = 'normal'
-        self.get_doc_id(get_id=value[0])
-        self.delete_doc(delete_id=value[0])
+
+        self.read_btn['command'] = lambda : self.get_doc_id(get_id=value[0])
+        self.del_btn['command'] = lambda : self.delete_doc(delete_id=value[0])
 
     # BUTTON FRAME
     self.btns_frame = Frame(self.note)
     self.read_btn = Button(self.btns_frame, cursor='hand2', text="Read", style='Decrypt.TButton', command=selected_items)
-    self.read_btn['state'] = 'disabled'
+    self.read_btn.state(['disabled'])
     self.read_btn.grid(row=0, column=0, pady=2, padx=2)
     self.del_btn = Button(self.btns_frame, cursor='hand2', text="Delete", style='Delete.TButton')
-    self.del_btn['state'] = 'disabled'
+    self.del_btn.state(['disabled'])
     self.del_btn.grid(row=0, column=1, pady=2, padx=2)
     self.btns_frame.pack(side=tk.BOTTOM, fill=tk.X)
 
