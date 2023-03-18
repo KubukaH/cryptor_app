@@ -18,6 +18,7 @@ import pkg_resources
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import AES, PKCS1_OAEP
 from models import generate_keys, check_key
+from styles import Stylings
 
 con = sqlite3.connect('notebookserver.db', detect_types=sqlite3.PARSE_DECLTYPES|sqlite3.PARSE_COLNAMES)
 cur = con.cursor()
@@ -70,7 +71,7 @@ def welcome_frame(root):
 
   welcome_fr = Frame(root)
 
-  notebook = Notebook(welcome_fr)
+  notebook = Notebook(welcome_fr, style="Notebook.TNotebook")
   notebook.pack(fill='both', pady=2, padx=2, expand=1)
   sign_in_tab(notebook, root)
   sign_up_tab(notebook, root)
@@ -123,12 +124,12 @@ def sign_in_tab(notebook, root):
       showerror('', 'Blank Form!')
 
   root.title('Welcome... ')
-  signin_frame = Frame(notebook, padding=16)
-  Label(signin_frame, text="Username:", ).grid(row=0, column=0, sticky='w', pady=(16, 0))
+  signin_frame = Frame(notebook, style="Notebook.TFrame", padding=16)
+  Label(signin_frame, text="Username:", style="NotebookLabel.TLabel" ).grid(row=0, column=0, sticky='w', pady=(16, 0))
 
   Label(
       signin_frame, 
-      text="Password:", 
+      text="Password:", style="NotebookLabel.TLabel" 
       ).grid(row=2, column=0, sticky='w', pady=(16, 0))
   email_tf = Entry(
       signin_frame, 
@@ -200,9 +201,9 @@ def sign_up_tab(notebook, root):
 
   confirm_pwd_label.trace('w', validate)
 
-  signup_frame = Frame(notebook, padding=(24,8,8,12))
+  signup_frame = Frame(notebook, style="Notebook.TFrame", padding=16)
 
-  Label(signup_frame, text="Username:", ).grid(row=0, column=0, pady=(4, 0), sticky='w')
+  Label(signup_frame, text="Username:", style="NotebookLabel.TLabel" ).grid(row=0, column=0, pady=(4, 0), sticky='w')
   email_tf = Entry(
     signup_frame, 
     font=f
@@ -211,7 +212,7 @@ def sign_up_tab(notebook, root):
 
   Label(
     signup_frame, 
-    text="Password:", 
+    text="Password:", style="NotebookLabel.TLabel"
     ).grid(row=2, column=0, pady=(4,0), sticky='w')
   pwd_tf = Entry(
     signup_frame,
@@ -221,12 +222,12 @@ def sign_up_tab(notebook, root):
     )
   pwd_tf.grid(row=3, column=0, sticky='w')
 
-  password_label_frame = Frame(signup_frame, padding=(0,4,0,0))
+  password_label_frame = Frame(signup_frame, style="Notebook.TFrame")
   password_label_frame.grid(row=4, column=0, sticky='w')
 
   Label(
     password_label_frame, 
-    text="Confirm Password:", 
+    text="Confirm Password:", style="NotebookLabel.TLabel"
     ).grid(row=0, column=0, pady=0, padx=0, sticky='w')
   message_label = Label(
     password_label_frame,
@@ -241,9 +242,9 @@ def sign_up_tab(notebook, root):
     )
   cpwd_tf.grid(row=5, column=0, sticky='w')
 
-  terms_frame = Frame(signup_frame, padding=(0,4,0,0))
+  terms_frame = Frame(signup_frame, style="Notebook.TFrame")
   terms_frame.grid(row=6, column=0, sticky='w')
-  Checkbutton(terms_frame, text='Accept terms found here:', variable=terms_var).grid(row=0, column=0, pady=0, padx=0, sticky='w')
+  Checkbutton(terms_frame, text='Accept terms found here:', variable=terms_var, style="NotebookCheckbutton.TCheckbutton").grid(row=0, column=0, pady=0, padx=0, sticky='w')
   Button(terms_frame, text='terms', command=lambda: signup_frame.wait_window(Copyright().top)).grid(row=1, column=0, pady=0, padx=16, sticky='w')
 
   signup_btn = Button(
@@ -448,32 +449,10 @@ def create_main_app():
   root = tk.Tk()
   root.title('Cryptor App')
   root.resizable(0, 0)
+  Run_Cookie(root=root)
   
   # Styles
-  style = Style(root)
-  style.map("Signup.TButton",
-      foreground=[('pressed', 'green'), ('active', 'blue')],
-      background=[('pressed', '!disabled', 'black'), ('active', 'white')]
-      )
-  style.map("Delete.TButton",
-      foreground=[('pressed', 'red'), ('active', 'red')],
-      background=[('pressed', '!disabled', 'black'), ('active', 'red')]
-      )
-  style.map("Decrypt.TButton",
-      foreground=[('pressed', 'green'), ('active', 'green')],
-      background=[('pressed', '!disabled', 'black'), ('active', 'green')]
-      )
-  style.map("Licence.TButton",
-      font="Consolas 6",
-      foreground=[('pressed', 'green'), ('active', 'green')],
-      background=[('pressed', '!disabled', 'black'), ('active', 'green')]
-      )
-  style.configure("Success.TLabel", font = "Verdana 8",
-      foreground='green')
-  style.configure("Error.TLabel", font = "Verdana 8",
-      foreground='red')
-  style.configure("Warning.TLabel", font = "Verdana 8",
-      foreground='orange')
+  Stylings(root=root)
 
   # The icon 
   try: 
@@ -491,14 +470,14 @@ def create_main_app():
       root.destroy()
 
   def check_run():
-    Run_Cookie(root)
+    root.after(1000, check_run)
 
   root.columnconfigure(0, weight=1)
   # root.protocol("WM_DELETE_WINDOW", lgt)
 
   if session_cookie is not None:
     base = base_frame_tab(root, session_cookie)
-    base.after(300, check_run)
+    root.after(300, check_run)
     base.pack(fill='both', expand=1)
   else:
     welcome = welcome_frame(root)

@@ -15,8 +15,7 @@ class file_list(Frame):
     self.deleted_id = tk.StringVar()
 
     self.note = tk.Toplevel(master, relief='flat')
-    self.note.resizable(0, 0)
-    self.note.maxsize(height=600, width=640)
+    self.note.geometry("600x400")
     self.note.attributes('-toolwindow', True)
 
     try:
@@ -71,7 +70,7 @@ class file_list(Frame):
         self.del_btn['command'] = lambda : self.delete_doc(delete_id=value[0])
 
     # BUTTON FRAME
-    self.btns_frame = Frame(self.note)
+    self.btns_frame = Frame(self.note, padding=(32,2))
     self.read_btn = Button(self.btns_frame, cursor='hand2', text="Read", style='Decrypt.TButton', command=selected_items)
     self.read_btn.state(['disabled'])
     self.read_btn.grid(row=0, column=0, pady=2, padx=2)
@@ -79,6 +78,7 @@ class file_list(Frame):
     self.del_btn.state(['disabled'])
     self.del_btn.grid(row=0, column=1, pady=2, padx=2)
     self.btns_frame.pack(side=tk.BOTTOM, fill=tk.X)
+    Button(self.btns_frame, cursor='hand2', text="Close", command=lambda : self.note.destroy()).grid(row=0, column=2, padx=(128,4))
 
     self.list_box.bind('<<ListboxSelect>>', selected_items)
 
