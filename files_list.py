@@ -82,7 +82,7 @@ class file_list(Frame):
 
     self.list_box.bind('<<ListboxSelect>>', selected_items)
 
-    self.progress_frame = Frame(self.note)
+    self.progress_frame = Frame(self.list_frame)
     # configrue the grid to place the progress bar is at the center
     self.progress_frame.columnconfigure(0, weight=1)
     self.progress_frame.rowconfigure(0, weight=1)
@@ -90,7 +90,7 @@ class file_list(Frame):
     self.progress_bar = Progressbar(self.progress_frame, orient=tk.HORIZONTAL, mode='indeterminate')
     self.progress_bar.grid(row=0, column=0, sticky=tk.EW, padx=10, pady=10)
 
-    self.progress_frame.grid(row=0, column=0, sticky=tk.NSEW)
+    self.progress_frame.pack()
 
   def get_doc_id(self, get_id):
     self.doc_id.set(get_id)
