@@ -1,14 +1,25 @@
 import sqlite3 as sql
 from collections import namedtuple
-from cryptography.hazmat.primitives.asymmetric import rsa
-from cryptography.hazmat.primitives import serialization
 from hashlib import blake2b
-import secrets
 from Crypto.PublicKey import RSA
 from Crypto.Random import get_random_bytes
-from Crypto.Cipher import AES, PKCS1_OAEP
-from tkinter.messagebox import showinfo, showerror
-	
+from Crypto.Cipher import PKCS1_OAEP
+import timeit
+import os
+
+def time_stuff(some_function):
+  def wrapper(*args, **kwargs):
+    t0 = timeit.default_timer()
+    value = some_function(*args, **kwargs)
+    print(timeit.default_timer() - t0, 'seconds')
+    return value
+  return wrapper
+
+def monitor(download_thread):
+	'''Monitor the download thread'''
+	if download_thread.is_alive():
+		pass
+
 def hashed_id(pid):
   h = blake2b(digest_size=24)
   h.update(pid)
@@ -19,9 +30,10 @@ def namedtuple_factory(cursor, row):
   cls = namedtuple("Row", fields)
   return cls._make(row)
 
+@time_stuff
 def insertUser(user_id, username, password, timestamp):
 	mode = ''
-	con = sql.connect("notebookserver.db")
+	con = sql.connect(os.path.realpath("notebookserver.db"))
 	try:
 		with con:
 			cur = con.cursor()
@@ -34,8 +46,9 @@ def insertUser(user_id, username, password, timestamp):
 	
 	return mode
 
+@time_stuff
 def insertCookie(cookie_id, cookie_owner_id, cookie_owner_username, ts, cookie_expire_time, cookie_owner_ts, cookie_owner_last_updated, cookie_expired = False):
-	con = sql.connect("notebookserver.db")
+	con = sql.connect(os.path.realpath("notebookserver.db"))
 	cur = con.cursor()
 	cur.execute(
 		'''
@@ -50,9 +63,10 @@ def insertCookie(cookie_id, cookie_owner_id, cookie_owner_username, ts, cookie_e
 	con.close()
 	return cookie
 
+@time_stuff
 def verifyCookie():
 	cookie = ''
-	con = sql.connect('notebookserver.db')
+	con = sql.connect(os.path.realpath("notebookserver.db"))
 	try:
 		con.row_factory = namedtuple_factory
 		cur = con.cursor()
@@ -66,7 +80,7 @@ def verifyCookie():
 
 def searchUser(user_name):
 	data = ''
-	con = sql.connect('notebookserver.db')
+	con = sql.connect(os.path.realpath("notebookserver.db"))
 	try:
 		con.row_factory = namedtuple_factory
 		cur = con.cursor()
@@ -78,8 +92,9 @@ def searchUser(user_name):
 		
 	return data
 
+@time_stuff
 def logout_func(cookie_id):
-	con = sql.connect('notebookserver.db')
+	con = sql.connect(os.path.realpath("notebookserver.db"))
 	try:
 		with con:
 			cur = con.cursor()
@@ -89,17 +104,18 @@ def logout_func(cookie_id):
 		print(ep)
 
 def retrieveUsers():
-	con = sql.connect("notebookserver.db")
+	con = sql.connect(os.path.realpath("notebookserver.db"))
 	cur = con.cursor()
 	cur.execute("SELECT username, password FROM users")
 	users = cur.fetchall()
 	con.close()
 	return users
 
+@time_stuff
 def insertFile(file_id, owner_name, data_file, cipher_aes, tag, session_key, ts):
 	res = ''
 	try:
-		con = sql.connect("notebookserver.db")
+		con = sql.connect(os.path.realpath("notebookserver.db"))
 		with con:
 			cur = con.cursor()
 			cur.execute('''INSERT INTO lockedfiles VALUES(
@@ -118,10 +134,11 @@ def insertFile(file_id, owner_name, data_file, cipher_aes, tag, session_key, ts)
 		res = ep
 	return res
 
+@time_stuff
 def updateFile(file_id, data_file, tag, cipher_aes, last_updated):
 	res = ''
 	try:
-		con = sql.connect("notebookserver.db")
+		con = sql.connect(os.path.realpath("notebookserver.db"))
 		with con:
 			cur = con.cursor()
 			cur.execute("SELECT * FROM lockedfiles WHERE file_id = :file_id", {"file_id": file_id})
@@ -139,17 +156,19 @@ def updateFile(file_id, data_file, tag, cipher_aes, last_updated):
 		res = ep
 	return res
 
+@time_stuff
 def retrieveFiles(session_uname):
-	con = sql.connect("notebookserver.db")
+	con = sql.connect(os.path.realpath("notebookserver.db"))
 	cur = con.cursor()
 	cur.execute("SELECT * FROM lockedfiles WHERE owner_name = :session_uname", {"session_uname": session_uname})
 	docs = cur.fetchall()
 	con.close()
 	return docs
 
+@time_stuff
 def retrieveSingleFile(file_id):
 	doc = ''
-	con = sql.connect('notebookserver.db')
+	con = sql.connect(os.path.realpath("notebookserver.db"))
 	try:
 		con.row_factory = namedtuple_factory
 		cur = con.cursor()
@@ -160,9 +179,10 @@ def retrieveSingleFile(file_id):
 		doc = ex
 	return doc
 
+@time_stuff
 def deleteFile(file_id):
 	res = ''
-	con = sql.connect("notebookserver.db")
+	con = sql.connect(os.path.realpath("notebookserver.db"))
 	try:
 		with con:
 			cur = con.cursor()
@@ -173,8 +193,9 @@ def deleteFile(file_id):
 		res = ep
 	return res
 
+@time_stuff
 def generate_keys():
-	con = sql.connect('notebookserver.db')
+	con = sql.connect(os.path.realpath("notebookserver.db"))
 	try:
 		item = ''
 		pvt = b'private_key'
@@ -203,9 +224,10 @@ def generate_keys():
 		item = ex
 	return item
 
+@time_stuff
 def check_key(key_id):
 	item = ''
-	con = sql.connect('notebookserver.db')
+	con = sql.connect(os.path.realpath("notebookserver.db"))
 	try:
 		con.row_factory = namedtuple_factory
 		cur = con.cursor()
