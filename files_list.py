@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter.ttk import *
-from models import retrieveFiles, verifyCookie
+from models import retrieveFiles, verifyCookie, time_stuff
 from datetime import datetime
 
 lifont = ('Times', 17, 'italic')
@@ -62,7 +62,7 @@ class file_list(Frame):
       selection = widget.curselection()
       value = widget.get(selection[0])
 
-      if (value) is not None:
+      if value is not None:
         self.del_btn['state'] = 'normal'
         self.read_btn['state'] = 'normal'
 
@@ -82,7 +82,7 @@ class file_list(Frame):
 
     self.list_box.bind('<<ListboxSelect>>', selected_items)
 
-    self.progress_frame = Frame(self.list_frame)
+    self.progress_frame = Frame(self.note)
     # configrue the grid to place the progress bar is at the center
     self.progress_frame.columnconfigure(0, weight=1)
     self.progress_frame.rowconfigure(0, weight=1)
@@ -90,13 +90,17 @@ class file_list(Frame):
     self.progress_bar = Progressbar(self.progress_frame, orient=tk.HORIZONTAL, mode='indeterminate')
     self.progress_bar.grid(row=0, column=0, sticky=tk.EW, padx=10, pady=10)
 
-    self.progress_frame.pack()
-
   def get_doc_id(self, get_id):
+    self.progress_frame.pack()
+    self.start_downloading()
     self.doc_id.set(get_id)
+    # download_thread = time_stuff
+    # download_thread.start()
+    self.monitor_download(download_thread=time_stuff)
     self.note.destroy()
   
   def delete_doc(self, delete_id):
+    self.progress_frame.pack()
     self.deleted_id.set(delete_id)
     self.note.destroy()
   
@@ -111,5 +115,8 @@ class file_list(Frame):
   def handle_download(self):
     self.start_downloading()
 
-  def monitor_download(self):
-    pass
+  def monitor_download(self, download_thread):
+    if download_thread:
+      self.note.after(1000, lambda: self.monitor_download(download_thread))
+    else:
+      self.stop_downloading()
