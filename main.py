@@ -19,6 +19,7 @@ from Crypto.PublicKey import RSA
 from Crypto.Cipher import AES, PKCS1_OAEP
 from models import generate_keys, check_key
 from styles import Stylings
+from monitor_cookie import cookie_monitor
 
 con = sqlite3.connect('notebookserver.db', detect_types=sqlite3.PARSE_DECLTYPES|sqlite3.PARSE_COLNAMES)
 cur = con.cursor()
@@ -413,7 +414,8 @@ def base_frame_tab(root, session_cookie):
   savebtn['state'] = 'disabled'
   savebtn.grid(row=2, column=0, padx=5, pady=10)
   Button(side_pane, text='Open file', command=open_file_selector).grid(row=3, column=0, padx=5, pady=10)
-  Button(side_pane, text="Logout", command=lambda : logout(root, session_cookie[0])).grid(row=4, column=0, padx=5, pady=(192,3))
+  #Button(side_pane, text="Logout", command=lambda : logout(root, session_cookie[0])).grid(row=4, column=0, padx=5, pady=(192,3))
+  Button(side_pane, text="Logout", command=lambda : base_frame.wait_window(cookie_monitor(base_frame).cookie_box)).grid(row=4, column=0, padx=5, pady=(192,3))
   LicencesFrame(side_pane)
 
   text_scroll.pack(fill='both', expand=1)
