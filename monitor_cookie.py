@@ -29,11 +29,13 @@ class cookie_monitor(Frame):
 
     # BUTTON FRAME
     self.btns_frame = Frame(self.cookie_box, padding=(16,2))
-    self.read_btn = Button(self.btns_frame, cursor='hand2', text="Yes", style='Decrypt.TButton')
+    self.read_btn = Button(self.btns_frame, cursor='hand2', text="Yes, Continue", style='Decrypt.TButton')
     self.read_btn.state(['!disabled'])
-    self.read_btn.grid(row=0, column=0, pady=2, padx=2)
-    self.del_btn = Button(self.btns_frame, cursor='hand2', text="Logout", style='Delete.TButton')
+    self.read_btn.grid(row=0, column=0, sticky=tk.W)
+    self.del_btn = Button(self.btns_frame, cursor='hand2', text="No, Logout", style='Delete.TButton')
     self.del_btn.state(['!disabled'])
-    self.del_btn.grid(row=0, column=1, pady=2, padx=2)
+    self.del_btn.grid(row=0, column=1, sticky=tk.E)
     self.btns_frame.pack(side=tk.BOTTOM, fill=tk.X)
-    Button(self.btns_frame, cursor='hand2', text="Close", command=lambda : self.cookie_box.destroy()).grid(row=0, column=2, padx=(64,4))
+
+    self.cookie_box.focus()
+

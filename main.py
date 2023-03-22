@@ -105,7 +105,7 @@ def sign_in_tab(notebook, root):
     uname = email_tf.get().encode('utf-8')
     pwd = pwd_tf.get().encode('utf-8')
 
-    expire_d = timedelta(minutes= 50)
+    expire_d = timedelta(minutes=6)
     expt = datetime.now() + expire_d
 
     if uname != ''.encode('utf-8') and pwd != ''.encode('utf-8'):
@@ -387,6 +387,10 @@ def base_frame_tab(root, session_cookie):
       text_scroll.focus()
     else:
       return 'break'
+  
+  def open_login_selector():
+    if (datetime.fromisoformat(session_cookie.cookie_expire_time) - datetime.now()) <= timedelta(minutes=5):
+      root.wait_window(cookie_monitor(root).cookie_box)
 
   def my_delete():
     open_file_selector()
@@ -414,11 +418,13 @@ def base_frame_tab(root, session_cookie):
   savebtn['state'] = 'disabled'
   savebtn.grid(row=2, column=0, padx=5, pady=10)
   Button(side_pane, text='Open file', command=open_file_selector).grid(row=3, column=0, padx=5, pady=10)
-  #Button(side_pane, text="Logout", command=lambda : logout(root, session_cookie[0])).grid(row=4, column=0, padx=5, pady=(192,3))
-  Button(side_pane, text="Logout", command=lambda : base_frame.wait_window(cookie_monitor(base_frame).cookie_box)).grid(row=4, column=0, padx=5, pady=(192,3))
+  Button(side_pane, text="Logout", command=lambda : logout(root, session_cookie[0])).grid(row=4, column=0, padx=5, pady=(192,3))
+  #Button(side_pane, text="Logout", command=lambda : base_frame.wait_window(cookie_monitor(base_frame).cookie_box)).grid(row=4, column=0, padx=5, pady=(192,3))
   LicencesFrame(side_pane)
 
   text_scroll.pack(fill='both', expand=1)
+
+  open_login_selector()
   
   return base_frame
 
@@ -430,6 +436,12 @@ def Run_Cookie(root):
       root.destroy()
       create_main_app()
       return
+    elif (datetime.fromisoformat(cookie.cookie_expire_time) - datetime.now()) <= timedelta(minutes=5):
+      root.wait_window(cookie_monitor(root).cookie_box)
+      return
+    else:
+      pass
+
   else:
     print('Session is logged out.')
     return
@@ -451,7 +463,6 @@ def create_main_app():
   root = tk.Tk()
   root.title('Cryptor App')
   root.resizable(0, 0)
-  Run_Cookie(root=root)
   
   # Styles
   Stylings(root=root)
@@ -472,14 +483,15 @@ def create_main_app():
       root.destroy()
 
   def check_run():
-    root.after(1000, check_run)
+    Run_Cookie(root=root)
+    base.after(1000, check_run)
 
   root.columnconfigure(0, weight=1)
   # root.protocol("WM_DELETE_WINDOW", lgt)
 
   if session_cookie is not None:
     base = base_frame_tab(root, session_cookie)
-    root.after(300, check_run)
+    base.after(1000, check_run)
     base.pack(fill='both', expand=1)
   else:
     welcome = welcome_frame(root)
