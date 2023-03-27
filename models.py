@@ -103,6 +103,17 @@ def logout_func(cookie_id):
 	except Exception as ep:
 		print(ep)
 
+@time_stuff
+def renew_cookie(cookie_id, cookie_expire_time):
+	con = sql.connect(os.path.realpath("notebookserver.db"))
+	try:
+		with con:
+			cur = con.cursor()
+			cur.execute('''SELECT * FROM cookies''')
+			cur.execute('''UPDATE cookies SET cookie_expire_time = :cookie_expire_time WHERE cookie_id = :cookie_id''', {'cookie_expire_time': cookie_expire_time, 'cookie_id': cookie_id})
+	except Exception as ep:
+		print(ep)
+
 def retrieveUsers():
 	con = sql.connect(os.path.realpath("notebookserver.db"))
 	cur = con.cursor()
