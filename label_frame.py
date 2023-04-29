@@ -7,8 +7,8 @@ class LicencesFrame(LabelFrame):
     super().__init__(master)
     self['text'] = 'Licences'
 
-    Button(self, text='Licence', command=lambda: self.wait_window(LicenceDetails().top)).grid(row=0, column=0, padx=5, pady=5)
-    Button(self, text='Copyright', command=lambda: self.wait_window(Copyright().top)).grid(row=1, column=0, padx=5, pady=5)
+    Button(self, text='Licence', style="Licence.TButton", command=lambda: self.wait_window(LicenceDetails().top)).grid(row=0, column=0, padx=5, pady=5)
+    Button(self, text='Copyright', style="Licence.TButton", command=lambda: self.wait_window(Copyright().top)).grid(row=1, column=0, padx=5, pady=5)
 
     self.grid(row=5, column=0, padx=5, pady=5)
 

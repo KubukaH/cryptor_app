@@ -2,6 +2,18 @@ import tkinter as tk
 from tkinter.ttk import *
 from models import retrieveFiles, verifyCookie, time_stuff
 from datetime import datetime
+from threading import Thread
+
+class FileDownload(Thread):
+  def __init__(self, url):
+    super().__init__()
+
+    self.url = url
+    self.file_d = None
+
+  def run(self):
+    self.file_d = self.url
+    # self.file_d = response
 
 lifont = ('Times', 17, 'italic')
 class file_list(Frame):
@@ -14,7 +26,7 @@ class file_list(Frame):
     self.doc_id = tk.StringVar()
     self.deleted_id = tk.StringVar()
 
-    self.note = tk.Toplevel(master, relief='flat')
+    self.note = tk.Toplevel(master, relief='flat', takefocus=True)
     self.note.geometry("600x400")
     self.note.attributes('-toolwindow', True)
 
@@ -94,9 +106,10 @@ class file_list(Frame):
     self.progress_frame.pack()
     self.start_downloading()
     self.doc_id.set(get_id)
-    # download_thread = time_stuff
-    # download_thread.start()
-    self.monitor_download(download_thread=time_stuff)
+    url = time_stuff
+    download_thread = FileDownload(url)
+    download_thread.start()
+    self.monitor_download(download_thread)
     self.note.destroy()
   
   def delete_doc(self, delete_id):
@@ -116,7 +129,7 @@ class file_list(Frame):
     self.start_downloading()
 
   def monitor_download(self, download_thread):
-    if download_thread:
+    if download_thread.is_alive():
       self.note.after(1000, lambda: self.monitor_download(download_thread))
     else:
       self.stop_downloading()

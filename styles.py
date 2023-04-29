@@ -16,7 +16,6 @@ def Stylings(root):
     background=[('pressed', '!disabled', '#3fa8a5'), ('active', 'green')]
   )
   style.map("Licence.TButton",
-    font="Consolas 6",
     foreground=[('pressed', 'green'), ('active', 'green')],
     background=[('pressed', '!disabled', '#3fa8a5'), ('active', 'green')]
   )

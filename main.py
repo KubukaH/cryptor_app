@@ -1,11 +1,9 @@
 #! /usr/bin/python3.11
 import tkinter as tk
-from tkinter.ttk import Frame, Button, Label, Notebook, Entry, Style, Checkbutton
+from tkinter.ttk import Frame, Button, Label, Notebook, Entry, Checkbutton
 from datetime import timedelta, datetime
-from models import insertUser, insertCookie, searchUser, insertFile, retrieveFiles, verifyCookie, logout_func, retrieveSingleFile, updateFile, deleteFile
+from models import insertUser, insertCookie, searchUser, verifyCookie, logout_func,deleteFile
 from tkinter.messagebox import showinfo, showerror, askokcancel, askyesno
-from hashlib import blake2b
-from hmac import compare_digest
 import secrets
 from tkinter.scrolledtext import ScrolledText
 from line_numbers import TextLineNumbers
@@ -13,13 +11,12 @@ from side_panel import SidePanel
 from files_list import file_list
 import sqlite3
 from label_frame import LicencesFrame, Copyright
-from subprocess import run, PIPE, STDOUT
-import pkg_resources
-from Crypto.PublicKey import RSA
-from Crypto.Cipher import AES, PKCS1_OAEP
-from models import generate_keys, check_key
 from styles import Stylings
 from monitor_cookie import cookie_monitor
+from progress import Progress_Frame
+from libraries import missing_libs
+from extras.encryt import lock_file, decrypt
+from generate_secrets import hash_sign, hashed_id, verify
 
 con = sqlite3.connect('notebookserver.db', detect_types=sqlite3.PARSE_DECLTYPES|sqlite3.PARSE_COLNAMES)
 cur = con.cursor()
@@ -75,24 +72,9 @@ def welcome_frame(root):
   notebook = Notebook(welcome_fr, style="Notebook.TNotebook")
   notebook.pack(fill='both', pady=2, padx=2, expand=1)
   sign_in_tab(notebook, root)
-  sign_up_tab(notebook, root)
+  sign_up_tab(notebook)
 
   return welcome_fr
-
-#HASHLIB SIGNATURE MAKING
-def hash_sign(cookie, secret):
-  h = blake2b(digest_size=AUTH_SIZE, key=secret)
-  h.update(cookie)
-  return h.hexdigest().encode('utf-8')
-
-def verify(cookie, sig, secret):
-  good_sig = hash_sign(cookie, secret)
-  return compare_digest(good_sig, sig)
-
-def hashed_id(pid):
-  h = blake2b(digest_size=24)
-  h.update(pid)
-  return h.hexdigest().encode('utf-8')
 
 def logout(root, cookie):
   logout_func(cookie_id=cookie)
@@ -105,7 +87,7 @@ def sign_in_tab(notebook, root):
     uname = email_tf.get().encode('utf-8')
     pwd = pwd_tf.get().encode('utf-8')
 
-    expire_d = timedelta(minutes=6)
+    expire_d = timedelta(minutes=30)
     expt = datetime.now() + expire_d
 
     if uname != ''.encode('utf-8') and pwd != ''.encode('utf-8'):
@@ -124,7 +106,7 @@ def sign_in_tab(notebook, root):
     else:
       showerror('', 'Blank Form!')
 
-  root.title('Welcome... ')
+  root.title('Welcome! ')
   signin_frame = Frame(notebook, style="Notebook.TFrame", padding=16)
   Label(signin_frame, text="Username:", style="NotebookLabel.TLabel" ).grid(row=0, column=0, sticky='w', pady=(16, 0))
 
@@ -155,11 +137,11 @@ def sign_in_tab(notebook, root):
   signin_frame.pack(fill='both', expand=1)
   notebook.add(signin_frame, text="Existing account, sign in")
 
-def sign_up_tab(notebook, root):
+def sign_up_tab(notebook):
   # Sign Up Function to connect to DB
   pwd_label = tk.StringVar()
   confirm_pwd_label = tk.StringVar()
-  terms_var = tk.IntVar()
+  terms_var = tk.BooleanVar()
 
   def set_message(message, type=None):
     message_label['text'] = message
@@ -170,7 +152,7 @@ def sign_up_tab(notebook, root):
     password = pwd_label.get()
     confirm_password = confirm_pwd_label.get()
     if confirm_password == password:
-      set_message('Good!', SUCCESS)
+      set_message('Match!', SUCCESS)
       signup_btn['state'] = 'normal'
       return
     if password.startswith(confirm_password):
@@ -185,7 +167,7 @@ def sign_up_tab(notebook, root):
     upwd = hash_sign(cookie=uname, secret=secret)
 
     if uname != ''.encode('utf-8') and secret != ''.encode('utf-8'):
-      if terms_var.get() != 0:
+      if terms_var.get() != False:
         mode = insertUser(user_id=hashed_id(secrets.token_bytes(24)), username=uname, password=upwd, timestamp=datetime.now())
         if mode == 'success':
           email_tf.delete(0, 'end')
@@ -194,7 +176,7 @@ def sign_up_tab(notebook, root):
           showinfo('', 'Successfully saved account.')
           notebook.select(0)
         else:
-          showerror('', mode)
+          showerror('', "Username is taken. Please choose another one.")
       else:
         showerror('', 'Accept the terms to proceed.')
     else:
@@ -259,72 +241,10 @@ def sign_up_tab(notebook, root):
   signup_frame.pack(fill='both', expand=True)
   notebook.add(signup_frame, text="New user, sign up")
 
-def lock_file(session_cookie, upd_id, text_message, mode):
-  res = None
-
-  if len(text_message) > 5:
-    pk = b'public_key'
-
-    new_key_pair = check_key(pk)
-
-    if new_key_pair is None:
-      item = generate_keys()
-      showerror(item)
-      new_key_pair = check_key(pk)
-    else:
-      new_key_pair = check_key(pk)
-    
-    # Encrypt the data with the AES session key
-    cipher_aes = AES.new(new_key_pair.session_key, AES.MODE_EAX)
-    ciphertext, tag = cipher_aes.encrypt_and_digest(text_message.encode("utf-8"))
-
-    if mode == 'create':
-      response = insertFile(file_id=hashed_id(secrets.token_bytes(24)), owner_name=session_cookie[2], data_file=ciphertext, cipher_aes=cipher_aes.nonce, tag=tag, session_key=new_key_pair.session_key, ts=datetime.now())
-      res = response
-
-    if mode == 'update':
-      response = updateFile(
-        file_id=upd_id.get().encode('utf-8'), 
-        data_file=ciphertext,
-        tag=tag,
-        cipher_aes=cipher_aes.nonce,
-        last_updated=datetime.now()
-      )
-      res = response
-
-  else:
-    res = 'The text editor is blank or the characters are less than the required minimum number. Type something first to continue.'
-
-  return res
-
-# MODE DECRYPT MESSAGE
-def decrypt(doc_id):
-  msg = ''
-  if len(doc_id.get()) > 1:
-    docfile = retrieveSingleFile(doc_id.get().encode('utf-8'))
-
-    if docfile != None:
-      bytes_k = check_key('private_key'.encode("utf-8"))
-      private_key = RSA.import_key(bytes_k[1])
-
-      # Decrypt Session Key
-      cipher_rsa = PKCS1_OAEP.new(private_key)
-      session_key = cipher_rsa.decrypt(bytes_k[2])
-
-      # Decrypt the data with the AES session key
-      cipher_aes = AES.new(session_key, AES.MODE_EAX, docfile[3])
-      msg = cipher_aes.decrypt_and_verify(docfile[2], docfile[4])
-
-    else:
-      showerror("Empty Document")
-  else:
-    showerror("Can't perform search.")
-
-  return msg
-
 ### Opening Frame
 def base_frame_tab(root, session_cookie):
   root.geometry('976x512')
+  root.title(f"This session is for {session_cookie.cookie_owner_username.decode('utf8').capitalize()}")
   upd_id = tk.StringVar()
 
   base_frame = Frame(root, width=976, height=512)
@@ -389,7 +309,7 @@ def base_frame_tab(root, session_cookie):
       return 'break'
   
   def open_login_selector():
-    if (datetime.fromisoformat(session_cookie.cookie_expire_time) - datetime.now()) <= timedelta(minutes=5):
+    if (datetime.fromisoformat(session_cookie.cookie_expire_time) - datetime.now()) <= timedelta(minutes=45):
       root.wait_window(cookie_monitor(root).cookie_box)
 
   def my_delete():
@@ -423,49 +343,27 @@ def base_frame_tab(root, session_cookie):
   LicencesFrame(side_pane)
 
   text_scroll.pack(fill='both', expand=1)
-
-  open_login_selector()
   
   return base_frame
 
 def Run_Cookie(root):
   cookie = verifyCookie()
   if cookie is not None:
-    if datetime.fromisoformat(cookie.cookie_expire_time) < datetime.now():
+    if datetime.fromisoformat(cookie.cookie_expire_time) <= datetime.now():
       logout_func(cookie[0])
       root.destroy()
       create_main_app()
-      return
-    elif (datetime.fromisoformat(cookie.cookie_expire_time) - datetime.now()) <= timedelta(minutes=5):
-      root.wait_window(cookie_monitor(root).cookie_box)
-      return
-    else:
-      pass
-
   else:
-    print('Session is logged out.')
-    return
+    print("Not logged in.")
 
 def create_main_app():
-  def run_cmd(cmd):
-    ps = run(cmd, stdout=PIPE, stderr=STDOUT, shell=True, text=True)
-    print(ps.stdout)
-
-  # packages to be conditionally installed with exact version
-  required = {'tkinter', 'datetime', 'sqlite3', 'hashlib', 'hmac', 'secrets', 'sys', 'subprocess', 'pkg_resources'}
-  installed = {f"{pkg.key}=={pkg.version}" for pkg in pkg_resources.working_set}
-  missing = required - installed
-
-  if missing:
-    run_cmd(f'pip install --ignore-installed {" ".join([*missing])}')
-
   session_cookie = verifyCookie()
   root = tk.Tk()
   root.title('Cryptor App')
   root.resizable(0, 0)
-  
+
   # Styles
-  Stylings(root=root)
+  Stylings(root)
 
   # The icon 
   try: 
@@ -484,14 +382,14 @@ def create_main_app():
 
   def check_run():
     Run_Cookie(root=root)
-    base.after(1000, check_run)
+    root.after(1000, check_run)
 
   root.columnconfigure(0, weight=1)
-  # root.protocol("WM_DELETE_WINDOW", lgt)
+  root.protocol("WM_DELETE_WINDOW", lgt)
 
   if session_cookie is not None:
+    root.after(100, check_run)
     base = base_frame_tab(root, session_cookie)
-    base.after(1000, check_run)
     base.pack(fill='both', expand=1)
   else:
     welcome = welcome_frame(root)
@@ -501,4 +399,7 @@ def create_main_app():
 
 #### RUN THE __MAIN__ ######
 if __name__ == "__main__":
+  ml = missing_libs()
+  if ml:
+    Progress_Frame()
   create_main_app()

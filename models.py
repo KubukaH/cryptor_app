@@ -1,6 +1,5 @@
 import sqlite3 as sql
 from collections import namedtuple
-from hashlib import blake2b
 from Crypto.PublicKey import RSA
 from Crypto.Random import get_random_bytes
 from Crypto.Cipher import PKCS1_OAEP
@@ -11,19 +10,9 @@ def time_stuff(some_function):
   def wrapper(*args, **kwargs):
     t0 = timeit.default_timer()
     value = some_function(*args, **kwargs)
-    print(timeit.default_timer() - t0, 'seconds')
+    # print(timeit.default_timer() - t0, 'seconds')
     return value
   return wrapper
-
-def monitor(download_thread):
-	'''Monitor the download thread'''
-	if download_thread.is_alive():
-		pass
-
-def hashed_id(pid):
-  h = blake2b(digest_size=24)
-  h.update(pid)
-  return h.hexdigest().encode('utf-8')
 
 def namedtuple_factory(cursor, row):
   fields = [column[0] for column in cursor.description]
@@ -88,7 +77,7 @@ def searchUser(user_name):
 		data = cur.fetchone()
 		con.close()
 	except Exception as ex:
-		data = 'ERROR'
+		data = "ERROR"
 		
 	return data
 
