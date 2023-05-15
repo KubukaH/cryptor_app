@@ -17,6 +17,7 @@ from progress import Progress_Frame
 from libraries import missing_libs
 from extras.encryt import lock_file, decrypt
 from generate_secrets import hash_sign, hashed_id, verify
+import timeit
 
 con = sqlite3.connect('notebookserver.db', detect_types=sqlite3.PARSE_DECLTYPES|sqlite3.PARSE_COLNAMES)
 cur = con.cursor()
@@ -58,7 +59,6 @@ cur.executescript('''
   COMMIT;
 ''')
 
-AUTH_SIZE = 32
 ERROR = 'Error.TLabel'
 SUCCESS = 'Success.TLabel'
 WARNING = 'Warning.TLabel'
@@ -87,7 +87,7 @@ def sign_in_tab(notebook, root):
     uname = email_tf.get().encode('utf-8')
     pwd = pwd_tf.get().encode('utf-8')
 
-    expire_d = timedelta(minutes=30)
+    expire_d = timedelta(minutes=5)
     expt = datetime.now() + expire_d
 
     if uname != ''.encode('utf-8') and pwd != ''.encode('utf-8'):
@@ -106,7 +106,7 @@ def sign_in_tab(notebook, root):
     else:
       showerror('', 'Blank Form!')
 
-  root.title('Welcome! ')
+  root.title('Welcome!')
   signin_frame = Frame(notebook, style="Notebook.TFrame", padding=16)
   Label(signin_frame, text="Username:", style="NotebookLabel.TLabel" ).grid(row=0, column=0, sticky='w', pady=(16, 0))
 
@@ -186,27 +186,27 @@ def sign_up_tab(notebook):
 
   signup_frame = Frame(notebook, style="Notebook.TFrame", padding=16)
 
-  Label(signup_frame, text="Username:", style="NotebookLabel.TLabel" ).grid(row=0, column=0, pady=(4, 0), sticky='w')
+  Label(signup_frame, text="Username:", style="NotebookLabel.TLabel" ).grid(row=0, column=0, pady=(1, 0), sticky='w')
   email_tf = Entry(
     signup_frame, 
     font=f
     )
-  email_tf.grid(row=1, column=0, sticky='w')
+  email_tf.grid(row=1, column=0, sticky='w', pady=(0,5))
 
   Label(
     signup_frame, 
     text="Password:", style="NotebookLabel.TLabel"
-    ).grid(row=2, column=0, pady=(4,0), sticky='w')
+    ).grid(row=2, column=0, pady=0, sticky='w')
   pwd_tf = Entry(
     signup_frame,
     font=f,
     show='*',
     textvariable=pwd_label
     )
-  pwd_tf.grid(row=3, column=0, sticky='w')
+  pwd_tf.grid(row=3, column=0, sticky='w', pady=(0,5))
 
   password_label_frame = Frame(signup_frame, style="Notebook.TFrame")
-  password_label_frame.grid(row=4, column=0, sticky='w')
+  password_label_frame.grid(row=4, column=0, sticky='w', pady=(0,5))
 
   Label(
     password_label_frame, 
@@ -223,10 +223,10 @@ def sign_up_tab(notebook):
     show='*',
     textvariable=confirm_pwd_label
     )
-  cpwd_tf.grid(row=5, column=0, sticky='w')
+  cpwd_tf.grid(row=5, column=0, sticky='w', pady=(0,5))
 
   terms_frame = Frame(signup_frame, style="Notebook.TFrame")
-  terms_frame.grid(row=6, column=0, sticky='w')
+  terms_frame.grid(row=6, column=0, sticky='w', pady=(0,5))
   Checkbutton(terms_frame, text='Accept terms found here:', variable=terms_var, style="NotebookCheckbutton.TCheckbutton").grid(row=0, column=0, pady=0, padx=0, sticky='w')
   Button(terms_frame, text='terms', command=lambda: signup_frame.wait_window(Copyright().top)).grid(row=1, column=0, pady=0, padx=16, sticky='w')
 
@@ -237,7 +237,7 @@ def sign_up_tab(notebook):
     command=save
     )
   signup_btn['state'] = 'disabled'
-  signup_btn.grid(row=7, column=0, pady=(24,0), sticky='w')
+  signup_btn.grid(row=7, column=0, pady=(12,0), sticky='w')
   signup_frame.pack(fill='both', expand=True)
   notebook.add(signup_frame, text="New user, sign up")
 
@@ -333,12 +333,12 @@ def base_frame_tab(root, session_cookie):
     lock_btn['state'] = 'normal'
     text_scroll.focus()
 
-  Button(side_pane, text="New file", command=new_doc).grid(row=0, column=0, padx=5, pady=10)
+  Button(side_pane, text="New file", style="Newfile.TButton", command=new_doc).grid(row=0, column=0, padx=5, pady=10)
   lock_btn.grid(row=1, column=0, padx=5, pady=10)
   savebtn['state'] = 'disabled'
   savebtn.grid(row=2, column=0, padx=5, pady=10)
   Button(side_pane, text='Open file', command=open_file_selector).grid(row=3, column=0, padx=5, pady=10)
-  Button(side_pane, text="Logout", command=lambda : logout(root, session_cookie[0])).grid(row=4, column=0, padx=5, pady=(192,3))
+  Button(side_pane, text="Logout", style="Lougout.TButton", command=lambda : logout(root, session_cookie[0])).grid(row=4, column=0, padx=5, pady=(192,3))
   #Button(side_pane, text="Logout", command=lambda : base_frame.wait_window(cookie_monitor(base_frame).cookie_box)).grid(row=4, column=0, padx=5, pady=(192,3))
   LicencesFrame(side_pane)
 
@@ -346,13 +346,15 @@ def base_frame_tab(root, session_cookie):
   
   return base_frame
 
-def Run_Cookie(root):
-  cookie = verifyCookie()
+def Run_Cookie(root, cookie):
   if cookie is not None:
     if datetime.fromisoformat(cookie.cookie_expire_time) <= datetime.now():
       logout_func(cookie[0])
       root.destroy()
       create_main_app()
+    #else:
+    #S  t0 = timeit.default_timer()
+    #  print(timeit.default_timer() - t0, 'seconds')
   else:
     print("Not logged in.")
 
@@ -373,21 +375,20 @@ def create_main_app():
 
   def lgt():
     if session_cookie is not None:
-      logout_func(cookie_id=session_cookie[0])
-
       if askyesno('Exiting...', 'The programme is shutting down now. All unsaved data may be lost permanently. You will be logged out automatically. \n\n\t\tDo you wish to proceed?'):
+        logout_func(cookie_id=session_cookie[0])
         root.destroy()
     else:
       root.destroy()
 
   def check_run():
-    Run_Cookie(root=root)
     root.after(1000, check_run)
 
   root.columnconfigure(0, weight=1)
   root.protocol("WM_DELETE_WINDOW", lgt)
 
   if session_cookie is not None:
+    Run_Cookie(root=root, cookie=session_cookie)
     root.after(100, check_run)
     base = base_frame_tab(root, session_cookie)
     base.pack(fill='both', expand=1)
@@ -399,7 +400,7 @@ def create_main_app():
 
 #### RUN THE __MAIN__ ######
 if __name__ == "__main__":
-  ml = missing_libs()
-  if ml:
-    Progress_Frame()
+  #ml = missing_libs()
+  #if ml:
+  #  Progress_Frame()
   create_main_app()

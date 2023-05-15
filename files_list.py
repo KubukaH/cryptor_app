@@ -90,7 +90,7 @@ class file_list(Frame):
     self.del_btn.state(['disabled'])
     self.del_btn.grid(row=0, column=1, pady=2, padx=2)
     self.btns_frame.pack(side=tk.BOTTOM, fill=tk.X)
-    Button(self.btns_frame, cursor='hand2', text="Close", command=lambda : self.note.destroy()).grid(row=0, column=2, padx=(128,4))
+    Button(self.btns_frame, cursor='hand2', style="Lougout.TButton", text="Close", command=lambda : self.note.destroy()).grid(row=0, column=2, padx=(128,4))
 
     self.list_box.bind('<<ListboxSelect>>', selected_items)
 

@@ -1,6 +1,6 @@
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import AES, PKCS1_OAEP
-from tkinter.messagebox import showerror
+from tkinter.messagebox import showerror, showinfo
 from models import check_key, generate_keys
 import secrets
 from datetime import datetime
@@ -17,7 +17,7 @@ def lock_file(session_cookie, upd_id, text_message, mode):
 
     if new_key_pair is None:
       item = generate_keys()
-      showerror(item)
+      showinfo(item)
       new_key_pair = check_key(pk)
     else:
       new_key_pair = check_key(pk)

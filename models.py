@@ -220,6 +220,7 @@ def generate_keys():
 		cur.execute('''INSERT INTO keys VALUES(:key_id, :key_data, :session_key)''', {"key_data": private_bytes, "key_id": pvt, "session_key":enc_session_key})
 		con.commit()
 		con.close()
+		item = "An RSA Public Key was generated."
 	except Exception as ex:
 		item = ex
 	return item
