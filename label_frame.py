@@ -21,7 +21,7 @@ class LicenceDetails(Frame):
     self.top.geometry("256x256")
     self.top.resizable(0,0)
     self.top.title('The licence')
-    self.top.attributes('-toolwindow', True)
+    self.top.attributes('-topmost', True)
 
 class Copyright(Frame):
   def __init__(self, master=None):
@@ -32,7 +32,7 @@ class Copyright(Frame):
     self.top.geometry("320x256")
     self.top.resizable(0,0)
     self.top.title('Copyrights')
-    self.top.attributes('-toolwindow', True)
+    self.top.attributes('-topmost', True)
 
     self.text_wrapper = TextWrapper()
     self.text_wrapper.wrap = "This page is licensed under the Python Software Foundation License Version 2. Examples, recipes, and other code in the documentation are additionally licensed under the Zero Clause BSD License. All rights reserved."

@@ -1,15 +1,22 @@
 #! /usr/bin/python3.11
+
+# # # # #
+# Installed Modules
+# # # # #
 import tkinter as tk
 from tkinter.ttk import Frame, Button, Label, Notebook, Entry, Checkbutton
 from datetime import timedelta, datetime
-from models import insertUser, insertCookie, searchUser, verifyCookie, logout_func,deleteFile
-from tkinter.messagebox import showinfo, showerror, askokcancel, askyesno
 import secrets
+from tkinter.messagebox import showinfo, showerror, askokcancel, askyesno
 from tkinter.scrolledtext import ScrolledText
+
+# # # #
+# Local folders Modules
+# # # #
+from models import insertUser, insertCookie, searchUser, verifyCookie, logout_func,deleteFile
 from line_numbers import TextLineNumbers
 from side_panel import SidePanel
 from files_list import file_list
-import sqlite3
 from label_frame import LicencesFrame, Copyright
 from styles import Stylings
 from monitor_cookie import cookie_monitor
@@ -17,47 +24,7 @@ from progress import Progress_Frame
 from libraries import missing_libs
 from extras.encryt import lock_file, decrypt
 from generate_secrets import hash_sign, hashed_id, verify
-import timeit
-
-con = sqlite3.connect('notebookserver.db', detect_types=sqlite3.PARSE_DECLTYPES|sqlite3.PARSE_COLNAMES)
-cur = con.cursor()
-cur.executescript('''
-  BEGIN;
-  CREATE TABLE IF NOT EXISTS lockedfiles(
-    file_id PRIMARY KEY UNIQUE,
-    owner_name TEXT,
-    data_file TEXT,
-    cipher_aes TEXT,
-    tag TEXT,
-    session_key TEXT,
-    ts TIMESTAMP,
-    last_updated TIMESTAMP
-  );
-  CREATE TABLE IF NOT EXISTS users(
-    user_id PRIMARY KEY UNIQUE,
-    user_name TEXT UNIQUE,
-    password TEXT,
-    ts timestamp,
-    last_updated DATE,
-    cookie BOOLEAN
-  );
-  CREATE TABLE IF NOT EXISTS cookies(
-    cookie_id PRIMARY KEY UNIQUE, 
-    cookie_owner_id TEXT, 
-    cookie_owner_username TEXT, 
-    ts TIMESTAMP, 
-    cookie_expire_time DATE,
-    cookie_owner_ts TIMESTAMP,
-    cookie_owner_last_updated DATE,
-    cookie_expired BOOLEAN
-  );
-  CREATE TABLE IF NOT EXISTS keys(
-		key_id PRIMARY KEY UNIQUE,
-		key_data TEXT,
-    session_key TEXT
-	);
-  COMMIT;
-''')
+from extras.init_run import run_connection
 
 ERROR = 'Error.TLabel'
 SUCCESS = 'Success.TLabel'
@@ -403,4 +370,5 @@ if __name__ == "__main__":
   #ml = missing_libs()
   #if ml:
   #  Progress_Frame()
+  run_connection()
   create_main_app()

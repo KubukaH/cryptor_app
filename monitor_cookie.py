@@ -14,7 +14,7 @@ class cookie_monitor(Frame):
 
     self.cookie_box = tk.Toplevel(master, relief='flat')
     self.cookie_box.geometry("360x100")
-    self.cookie_box.attributes('-toolwindow', True)
+    self.cookie_box.attributes('-topmost', True)
 
     try:
       self.cookie_box.wm_iconbitmap("cryp.ico") 

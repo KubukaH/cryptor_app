@@ -21,7 +21,7 @@ class Progress_Frame(tk.Tk):
 
     # self.note = tk.Toplevel(master, relief='flat', takefocus=True)
     self.geometry("300x50")
-    self.attributes('-toolwindow', True)
+    self.attributes('-alpha', True)
     self.title("Downloading modules ...")
 
     self.progress_frame = Frame(self)

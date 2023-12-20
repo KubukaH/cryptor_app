@@ -28,7 +28,7 @@ class file_list(Frame):
 
     self.note = tk.Toplevel(master, relief='flat', takefocus=True)
     self.note.geometry("600x400")
-    self.note.attributes('-toolwindow', True)
+    self.note.attributes('-topmost', True)
 
     try:
       self.note.wm_iconbitmap("cryp.ico") 
