@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter.ttk import *
-from textwrap import TextWrapper
+import time
 
 class LicencesFrame(LabelFrame):
   def __init__(self, master):
@@ -10,7 +10,7 @@ class LicencesFrame(LabelFrame):
     Button(self, text='Licence', style="Licence.TButton", command=lambda: self.wait_window(LicenceDetails().top)).grid(row=0, column=0, padx=5, pady=5)
     Button(self, text='Copyright', style="Licence.TButton", command=lambda: self.wait_window(Copyright().top)).grid(row=1, column=0, padx=5, pady=5)
 
-    self.grid(row=5, column=0, padx=5, pady=5)
+    self.grid(row=6, column=0, padx=5, pady=5)
 
 class LicenceDetails(Frame):
   def __init__(self, master=None):
@@ -23,6 +23,13 @@ class LicenceDetails(Frame):
     self.top.title('The licence')
     self.top.attributes('-topmost', True)
 
+    self.text_fr = tk.Text(self.top, height=12, relief='flat', bg='gray')
+    self.text_fr.pack(fill='x', expand=1, side='top')
+    self.text_fr.insert(1.0, "This program comes with ABSOLUTELY NO WARRANTY; for details type `show w'. \n\nThis is free software, and you are welcome to redistribute it under certain conditions; \ntype `show c' for details.")
+    self.text_fr['state'] = 'disabled'
+
+    Label(self.top, text=f"©{time.strftime('%Y')}").pack(side='bottom')
+
 class Copyright(Frame):
   def __init__(self, master=None):
     super().__init__(master)
@@ -34,11 +41,6 @@ class Copyright(Frame):
     self.top.title('Copyrights')
     self.top.attributes('-topmost', True)
 
-    self.text_wrapper = TextWrapper()
-    self.text_wrapper.wrap = "This page is licensed under the Python Software Foundation License Version 2. Examples, recipes, and other code in the documentation are additionally licensed under the Zero Clause BSD License. All rights reserved."
-    self.text_wrapper.initial_indent = ''
-    self.text_wrapper.width = 35
-
     self.frame_one = Frame(self.top, relief='flat')
     self.frame_one.grid(row=0, column=0, padx=4, pady=2)
 
@@ -49,4 +51,4 @@ class Copyright(Frame):
     
     self.frame_two = Frame(self.top, relief='flat')
     self.frame_two.grid(row=1, column=0, pady=16)
-    Label(self.frame_two, text='©2023. Mapenzi Mudimba').pack()
+    Label(self.frame_two, text=f"©{time.strftime('%Y')}. Mapenzi Mudimba").pack()

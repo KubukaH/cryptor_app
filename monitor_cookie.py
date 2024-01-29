@@ -10,6 +10,8 @@ class cookie_monitor(Frame):
     super().__init__(master)
     self.pack()
 
+    self.valueVar = tk.StringVar()
+
     self.session_cookie = verifyCookie()
 
     self.cookie_box = tk.Toplevel(master, relief='flat')
@@ -44,9 +46,11 @@ class cookie_monitor(Frame):
     self.cookie_box.focus()
 
   def re_cookie(self):
-    renew_cookie(cookie_id=self.session_cookie.cookie_id, cookie_expire_time=datetime.now() + timedelta(minutes=6))
+    renew_cookie(cookie_id=self.session_cookie.cookie_id, cookie_expire_time=datetime.now() + timedelta(minutes=45))
     self.cookie_box.destroy()
+    self.valueVar.set('renewed')
 
   def logout_user(self):
     logout_func(self.session_cookie.cookie_id)
     self.cookie_box.destroy()
+    self.valueVar.set('logout')

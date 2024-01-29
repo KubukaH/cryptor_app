@@ -27,7 +27,7 @@ class file_list(Frame):
     self.deleted_id = tk.StringVar()
 
     self.note = tk.Toplevel(master, relief='flat', takefocus=True)
-    self.note.geometry("600x400")
+    self.note.geometry("860x400")
     self.note.attributes('-topmost', True)
 
     try:
@@ -51,8 +51,8 @@ class file_list(Frame):
       self.list_var = tk.Variable(value=[
         (
           doc[0].decode('utf-8'),
-          doc[1].decode('utf-8').capitalize(), 
-          f"Last updated {datetime.fromisoformat(doc[7]).strftime('%d/%m/%Y %X')}"
+          doc[1].decode('utf-8').capitalize(),
+          datetime.fromisoformat(doc[6]).strftime('%d/%m/%Y %X')
         ) for doc in self.all_files
       ])
 
