@@ -1,19 +1,7 @@
 import tkinter as tk
 from tkinter.ttk import *
-from models import retrieveFiles, verifyCookie, time_stuff
+from models import retrieveFiles, verifyCookie
 from datetime import datetime
-from threading import Thread
-
-class FileDownload(Thread):
-  def __init__(self, url):
-    super().__init__()
-
-    self.url = url
-    self.file_d = None
-
-  def run(self):
-    self.file_d = self.url
-    # self.file_d = response
 
 lifont = ('Times', 17, 'italic')
 class file_list(Frame):
@@ -45,45 +33,42 @@ class file_list(Frame):
     self.list_frame["padding"] = 4
     self.list_frame.pack(fill='both', expand=1)
 
-    if len(self.all_files) == 0:
-      self.list_var = tk.Variable(value=["No documents"])
-    else:
-      self.list_var = tk.Variable(value=[
-        (
-          doc[0].decode('utf-8'),
-          doc[1].decode('utf-8').capitalize(),
-          datetime.fromisoformat(doc[6]).strftime('%d/%m/%Y %X')
-        ) for doc in self.all_files
-      ])
+    # use treeview for making a list
+    self.lst_files = Treeview(self.list_frame, selectmode='browse')
 
-    self.list_box = tk.Listbox(
-      self.list_frame,
-      listvariable=self.list_var,
-      height=8,
-      selectmode=tk.BROWSE
-    )
+    # attach scrollbar
+    self.lst_scrbar = Scrollbar(self.list_frame, command=self.lst_files.yview)
+    self.lst_scrbar.pack(side='right', fill='y')
 
-    self.vbar = tk.Scrollbar(self.list_frame, orient='vertical', command=self.list_box.yview)
+    self.lst_files['yscrollcommand'] = self.lst_scrbar.set
 
-    self.list_box['yscrollcommand'] = self.vbar.set
-    self.vbar.pack(side='right', fill='y')
-    self.list_box.pack(fill='both', expand=1)
+    # list columns
+    self.lst_files['columns'] = ('file_id', 'owner_name', 'created', 'updated')
 
-    def selected_items(event):
-      widget = event.widget
-      selection = widget.curselection()
-      value = widget.get(selection[0])
+    # formatting columns
+    self.lst_files.column('#0', width=0, stretch='no')
+    self.lst_files.column('file_id', width=188, anchor='center')
+    self.lst_files.column('owner_name', width=10, anchor='center')
+    self.lst_files.column('created', width=20, anchor='center')
+    self.lst_files.column('updated', width=20, anchor='center')
 
-      if value is not None:
-        self.del_btn['state'] = 'normal'
-        self.read_btn['state'] = 'normal'
+    # format headings
+    self.lst_files.heading('#0', text='', anchor='center')
+    self.lst_files.heading('file_id', text='File ID', anchor='center')
+    self.lst_files.heading('owner_name', text='File Owner', anchor='center')
+    self.lst_files.heading('created', text='Created', anchor='center')
+    self.lst_files.heading('created', text='Updated', anchor='center')
 
-        self.read_btn['command'] = lambda : self.get_doc_id(get_id=value[0])
-        self.del_btn['command'] = lambda : self.delete_doc(delete_id=value[0])
+    # populate the treeview table
+    global count
+    count = 0
+    for item in self.all_files:
+      self.lst_files.insert(parent='', index='end', iid=count, text='', values=(item[0].decode('utf-8'), item[1].decode('utf-8'), datetime.fromisoformat(item[6]).strftime('%d-%m-%Y %X'), datetime.fromisoformat(item[7]).strftime('%d-%m-%Y %X') ))
+      count += 1
 
     # BUTTON FRAME
     self.btns_frame = Frame(self.note, padding=(32,2))
-    self.read_btn = Button(self.btns_frame, cursor='hand2', text="Read", style='Decrypt.TButton', command=selected_items)
+    self.read_btn = Button(self.btns_frame, cursor='hand2', text="Read", style='Decrypt.TButton')
     self.read_btn.state(['disabled'])
     self.read_btn.grid(row=0, column=0, pady=2, padx=2)
     self.del_btn = Button(self.btns_frame, cursor='hand2', text="Delete", style='Delete.TButton')
@@ -92,44 +77,27 @@ class file_list(Frame):
     self.btns_frame.pack(side=tk.BOTTOM, fill=tk.X)
     Button(self.btns_frame, cursor='hand2', style="Lougout.TButton", text="Close", command=lambda : self.note.destroy()).grid(row=0, column=2, padx=(128,4))
 
-    self.list_box.bind('<<ListboxSelect>>', selected_items)
+    def select_record(event):
+      widget = event.widget
+      value = widget.focus()
 
-    self.progress_frame = Frame(self.note)
-    # configrue the grid to place the progress bar is at the center
-    self.progress_frame.columnconfigure(0, weight=1)
-    self.progress_frame.rowconfigure(0, weight=1)
+      values = self.lst_files.item(value, 'values')
 
-    self.progress_bar = Progressbar(self.progress_frame, orient=tk.HORIZONTAL, mode='indeterminate')
-    self.progress_bar.grid(row=0, column=0, sticky=tk.EW, padx=10, pady=10)
+      self.del_btn['state'] = 'normal'
+      self.read_btn['state'] = 'normal'
+
+      self.read_btn['command'] = lambda : self.get_doc_id(get_id=values[0])
+      self.del_btn['command'] = lambda : self.delete_doc(delete_id=values[0])
+
+    # bind the treeview selection mode
+    self.lst_files.bind('<<TreeviewSelect>>', select_record)
+
+    self.lst_files.pack(fill='both', expand=True)
 
   def get_doc_id(self, get_id):
-    self.progress_frame.pack()
-    self.start_downloading()
     self.doc_id.set(get_id)
-    url = time_stuff
-    download_thread = FileDownload(url)
-    download_thread.start()
-    self.monitor_download(download_thread)
     self.note.destroy()
   
   def delete_doc(self, delete_id):
-    self.progress_frame.pack()
     self.deleted_id.set(delete_id)
     self.note.destroy()
-  
-  def start_downloading(self):
-    self.progress_frame.tkraise()
-    self.progress_bar.start(20)
-
-  def stop_downloading(self):
-    self.list_frame.tkraise()
-    self.progress_bar.stop()
-
-  def handle_download(self):
-    self.start_downloading()
-
-  def monitor_download(self, download_thread):
-    if download_thread.is_alive():
-      self.note.after(1000, lambda: self.monitor_download(download_thread))
-    else:
-      self.stop_downloading()
