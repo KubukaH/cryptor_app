@@ -46,7 +46,7 @@ def welcome_frame(root):
   
 def sign_in_tab(notebook, root):
   # function to get user data for confirmation
-  def getIn():
+  def getIn(event=None):
     uname = email_tf.get().encode('utf-8')
     pwd = pwd_tf.get().encode('utf-8')
 
@@ -97,6 +97,7 @@ def sign_in_tab(notebook, root):
       style='Signup.TButton',
       )
   login_btn.grid(row=4, column=0, pady=(32,8), sticky='w')
+  login_btn.bind("<Return>", getIn)
 
   signin_frame.pack(fill='both', expand=1)
   notebook.add(signin_frame, text="User, sign in")
@@ -340,6 +341,12 @@ def Run_Cookie(root, cookie):
   else:
     print("Not logged in.")
 
+def run_progress_frm(root):
+  pf = Progress_Frame(root)
+  if pf.p_result.get() == True:
+    root.destroy()
+    create_main_app()
+
 def create_main_app():
   session_cookie = verifyCookie()
   root = tk.Tk()
@@ -370,7 +377,9 @@ def create_main_app():
   root.columnconfigure(0, weight=1)
   root.protocol("WM_DELETE_WINDOW", lgt)
 
-  if session_cookie is not None:
+  if missing_libs is True:
+    run_progress_frm(root)
+  elif session_cookie is not None:
     root.after(1000, check_run)
     base = base_frame_tab(root, session_cookie)
     base.pack(fill='both', expand=1)
@@ -383,10 +392,4 @@ def create_main_app():
 #### RUN THE __MAIN__ FUNCTION ####
 if __name__ == "__main__":
   run_connection()
-  try:
-    if missing_libs is not True:
-      Progress_Frame()
-    else:
-      pass
-  finally:
-    create_main_app()
+  create_main_app()

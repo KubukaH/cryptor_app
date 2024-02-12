@@ -16,15 +16,17 @@ class Download_Module(Thread):
     self.file_d = self.url
     return
 
-class Progress_Frame(tk.Tk):
-  def __init__(self):
-    super().__init__(None)
+class Progress_Frame(Frame):
+  def __init__(self, master):
+    super().__init__(master)
     Stylings(self)
 
-    self.geometry("300x80")
-    self.attributes('-alpha', True)
-    self.title("Downloading modules ...")
-    self.resizable(0,0)
+    self.p_result = tk.BooleanVar()
+
+    master.geometry("300x80")
+    master.attributes('-topmost', True)
+    master.title("Downloading modules ...")
+    master.resizable(0,0)
 
     self.progress_frame = Frame(self)
     self.progress_frame.columnconfigure(0, weight=1)
@@ -42,7 +44,7 @@ class Progress_Frame(tk.Tk):
     self.YesBtn['command'] = self.check_window
     self.YesBtn.grid(row=0,column=0, sticky='w', padx=(2,64), pady=4)
 
-    SkipBtn = Button(self.buttons, text='Skip', command=self.destroy)
+    SkipBtn = Button(self.buttons, text='Skip', command=self.skip_dwn)
     SkipBtn.grid(row=0, column=1, sticky='e')
     
     # packages to be conditionally installed with exact version
@@ -51,7 +53,11 @@ class Progress_Frame(tk.Tk):
 
     self.missing_modules = self.required_modules - self.installed_modules
 
-    #self.check_window()
+    self.pack(fill='both', expand=1)
+
+  def skip_dwn(self):
+    self.p_result.set(True)
+    self.master.destroy()
 
   def check_window(self):
     if self.missing_modules is True:
@@ -59,7 +65,6 @@ class Progress_Frame(tk.Tk):
       self.handle_download()
     else:
       self.YesBtn['state'] = "disabled"
-      self.destroy()
 
   def start_downloading(self):
     self.progress_frame.tkraise()
@@ -81,4 +86,5 @@ class Progress_Frame(tk.Tk):
       self.after(100, lambda: self.monitor(download_thread))
     else:
       self.stop_downloading()
-      self.destroy()
+      self.p_result.set(True)
+      self.master.destroy()
